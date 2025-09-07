@@ -2,7 +2,6 @@ package com.flow.mod.licensing;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import net.minecraft.client.Minecraft;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -41,16 +40,16 @@ public class LicenseValidator {
                 return true;
             } else if (isValid && !hwidMatch) {
                 System.err.println("[Flow] Error: HWID no coincide con la base de datos.");
-                crashMinecraft("HWID inválido. Esta licencia está registrada a otro dispositivo.");
+                crashGame("HWID inválido. Esta licencia está registrada a otro dispositivo.");
                 return false;
             } else {
                 System.err.println("[Flow] Error: Licencia inválida o expirada.");
-                crashMinecraft("Licencia inválida o expirada. Por favor, compra una licencia en nuestra web.");
+                crashGame("Licencia inválida o expirada. Por favor, compra una licencia en nuestra web.");
                 return false;
             }
         } catch (Exception e) {
             System.err.println("[Flow] Error al verificar la licencia: " + e.getMessage());
-            crashMinecraft("Error al verificar la licencia. Por favor, verifica tu conexión a internet.");
+            crashGame("Error al verificar la licencia. Por favor, verifica tu conexión a internet.");
             return false;
         }
     }
@@ -214,9 +213,9 @@ public class LicenseValidator {
     }
     
     /**
-     * Hace crash de Minecraft con un mensaje personalizado
+     * Hace crash del juego con un mensaje personalizado
      */
-    private static void crashMinecraft(String message) {
+    private static void crashGame(String message) {
         try {
             // En un entorno real, esto lanzaría una excepción para crashear Minecraft
             throw new RuntimeException("[Flow] Error de licencia: " + message);
