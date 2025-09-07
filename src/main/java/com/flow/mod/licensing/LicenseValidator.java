@@ -2,10 +2,16 @@ package com.flow.mod.licensing;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.InputStreamReader;
+import java.net.ConnectException;
 import java.net.HttpURLConnection;
+import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -14,9 +20,11 @@ import java.util.List;
 import java.util.Scanner;
 
 public class LicenseValidator {
-    private static final String API_URL = "https://tudominio.com/api/verify_license";
+    private static final String API_URL = "https://flowclient.shop/api/verify_license.php";
     private static String cachedHWID = null;
-
+    private static final String LICENSE_FILE = "flow_license.dat";
+    private static final int CONNECTION_TIMEOUT = 5000; // 5 segundos
+    
     /**
      * Verifica la licencia al iniciar el mod
      * @param licenseKey La clave de licencia a verificar
@@ -25,33 +33,117 @@ public class LicenseValidator {
     public static boolean validateLicense(String licenseKey) {
         try {
             String hwid = getHWID();
+            
+            // Intentar verificación en línea
+            boolean onlineValidation = tryOnlineValidation(licenseKey, hwid);
+            if (onlineValidation) {
+                // Si la validación en línea es exitosa, guardar la licencia localmente
+                saveLicenseLocally(licenseKey, hwid);
+                System.out.println("[Flow] Licencia válida. ¡Bienvenido!");
+                return true;
+            }
+            
+            // Si la validación en línea falla, intentar verificación offline
+            if (isValidOffline(licenseKey, hwid)) {
+                System.out.println("[Flow] Validación offline exitosa. ¡Bienvenido!");
+                return true;
+            }
+            
+            // Si ambas validaciones fallan, mostrar error
+            System.err.println("[Flow] Error: Licencia inválida o expirada.");
+            crashGame("Licencia inválida o expirada. Por favor, compra una licencia en nuestra web.");
+            return false;
+        } catch (Exception e) {
+            e.printStackTrace();
+            // En caso de error, intentar verificación offline
+            if (isValidOffline(licenseKey, getHWID())) {
+                System.out.println("[Flow] Validación offline exitosa. ¡Bienvenido!");
+                return true;
+            }
+            
+            System.err.println("[Flow] Error al verificar la licencia: " + e.getMessage());
+            crashGame("Error al verificar la licencia. Por favor, verifica tu conexión a internet.");
+            return false;
+        }
+    }
+    
+    /**
+     * Intenta validar la licencia en línea
+     */
+    private static boolean tryOnlineValidation(String licenseKey, String hwid) {
+        try {
             JsonObject requestData = new JsonObject();
             requestData.addProperty("license_key", licenseKey);
             requestData.addProperty("hwid", hwid);
             
             String response = sendPostRequest(API_URL, requestData.toString());
-            JsonObject jsonResponse = JsonParser.parseString(response).getAsJsonObject();
-            
-            boolean isValid = jsonResponse.get("valid").getAsBoolean();
-            boolean hwidMatch = jsonResponse.get("hwid_match").getAsBoolean();
-            
-            if (isValid && hwidMatch) {
-                System.out.println("[Flow] Licencia válida. ¡Bienvenido!");
-                return true;
-            } else if (isValid && !hwidMatch) {
-                System.err.println("[Flow] Error: HWID no coincide con la base de datos.");
-                crashGame("HWID inválido. Esta licencia está registrada a otro dispositivo.");
+            if (response == null || response.isEmpty()) {
+                System.err.println("[Flow] Error: Respuesta vacía del servidor");
                 return false;
-            } else {
-                System.err.println("[Flow] Error: Licencia inválida o expirada.");
-                crashGame("Licencia inválida o expirada. Por favor, compra una licencia en nuestra web.");
+            }
+            
+            try {
+                JsonObject jsonResponse = JsonParser.parseString(response).getAsJsonObject();
+                
+                boolean isValid = jsonResponse.has("valid") && jsonResponse.get("valid").getAsBoolean();
+                boolean hwidMatch = !jsonResponse.has("hwid_match") || jsonResponse.get("hwid_match").getAsBoolean();
+                
+                if (isValid && hwidMatch) {
+                    return true;
+                } else if (isValid && !hwidMatch) {
+                    System.err.println("[Flow] Error: HWID no coincide con la base de datos.");
+                    crashGame("HWID inválido. Esta licencia está registrada a otro dispositivo.");
+                    return false;
+                }
+            } catch (JsonSyntaxException e) {
+                System.err.println("[Flow] Error al parsear la respuesta del servidor: " + e.getMessage());
+                System.err.println("[Flow] Respuesta recibida: " + response);
                 return false;
             }
         } catch (Exception e) {
-            System.err.println("[Flow] Error al verificar la licencia: " + e.getMessage());
-            crashGame("Error al verificar la licencia. Por favor, verifica tu conexión a internet.");
-            return false;
+            System.err.println("[Flow] Error en validación online: " + e.getMessage());
         }
+        return false;
+    }
+    
+    /**
+     * Guarda la información de la licencia localmente para verificación offline
+     */
+    private static void saveLicenseLocally(String licenseKey, String hwid) {
+        try {
+            File file = new File(LICENSE_FILE);
+            FileWriter writer = new FileWriter(file);
+            writer.write(licenseKey + ":" + hwid);
+            writer.close();
+        } catch (Exception e) {
+            System.err.println("[Flow] Error al guardar licencia: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Verifica si la licencia es válida offline
+     */
+    private static boolean isValidOffline(String licenseKey, String hwid) {
+        try {
+            File file = new File(LICENSE_FILE);
+            if (!file.exists()) {
+                return false;
+            }
+            
+            BufferedReader reader = new BufferedReader(new FileReader(file));
+            String line = reader.readLine();
+            reader.close();
+            
+            if (line != null && !line.isEmpty()) {
+                String[] parts = line.split(":");
+                if (parts.length == 2) {
+                    return parts[0].equals(licenseKey) && parts[1].equals(hwid);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("[Flow] Error en validación offline: " + e.getMessage());
+        }
+        return false;
     }
     
     /**
@@ -171,7 +263,7 @@ public class LicenseValidator {
                 String firstLine = sc.nextLine();
                 sc.close();
                 if (!firstLine.isEmpty()) {
-                    String[] macParts = firstLine.split("","");
+                    String[] macParts = firstLine.split(",");
                     if (macParts.length > 0) {
                         return macParts[0].replace("\"", "");
                     }
@@ -190,26 +282,42 @@ public class LicenseValidator {
         URL obj = new URL(url);
         HttpURLConnection con = (HttpURLConnection) obj.openConnection();
         
-        // Configurar la conexión
+        // Configurar la conexión con timeout
         con.setRequestMethod("POST");
         con.setRequestProperty("Content-Type", "application/json");
         con.setRequestProperty("Accept", "application/json");
+        con.setConnectTimeout(CONNECTION_TIMEOUT);
+        con.setReadTimeout(CONNECTION_TIMEOUT);
         con.setDoOutput(true);
         
-        // Enviar datos
-        con.getOutputStream().write(jsonData.getBytes(StandardCharsets.UTF_8));
-        
-        // Obtener respuesta
-        BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
-        String inputLine;
-        StringBuilder response = new StringBuilder();
-        
-        while ((inputLine = in.readLine()) != null) {
-            response.append(inputLine);
+        try {
+            // Enviar datos
+            con.getOutputStream().write(jsonData.getBytes(StandardCharsets.UTF_8));
+            
+            // Obtener respuesta
+            int responseCode = con.getResponseCode();
+            if (responseCode != 200) {
+                System.err.println("[Flow] Error del servidor: Código " + responseCode);
+                return null;
+            }
+            
+            BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+            String inputLine;
+            StringBuilder response = new StringBuilder();
+            
+            while ((inputLine = in.readLine()) != null) {
+                response.append(inputLine);
+            }
+            in.close();
+            
+            return response.toString();
+        } catch (SocketTimeoutException e) {
+            System.err.println("[Flow] Tiempo de espera agotado al conectar con el servidor de licencias");
+            throw e;
+        } catch (ConnectException e) {
+            System.err.println("[Flow] No se pudo conectar al servidor de licencias: " + e.getMessage());
+            throw e;
         }
-        in.close();
-        
-        return response.toString();
     }
     
     /**
