@@ -11,7 +11,7 @@ public final class Main implements ModInitializer {
 	@Override
 	public void onInitialize() {
 		SecurityManager.check();
-		System.out.println("Argon mod initialized!"); // Debug message
+		
 		try {
 			new Argon();
 

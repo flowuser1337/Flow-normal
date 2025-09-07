@@ -1,5 +1,6 @@
 package dev.lvstrng.argon.module.modules.client;
 
+import dev.lvstrng.argon.Argon;
 import dev.lvstrng.argon.event.events.TickListener;
 import dev.lvstrng.argon.mixin.ClientPlayerInteractionManagerAccessor;
 import dev.lvstrng.argon.mixin.LivingEntityJumpAccessor;
@@ -10,6 +11,7 @@ import dev.lvstrng.argon.module.setting.BooleanSetting;
 import dev.lvstrng.argon.utils.EncryptedString;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.ClientPlayerInteractionManager;
+import net.minecraft.item.SplashPotionItem;
 import net.minecraft.util.Hand;
 
 import java.util.Random;
@@ -45,9 +47,16 @@ public class NoDelay extends Module implements TickListener {
     public void onTick() {
         if (mc.player == null || mc.interactionManager == null) return;
 
-        
+        System.out.println("[NoDelay] Tick");
+
+        FastPot fastPotModule = Argon.INSTANCE.getModuleManager().getModule(FastPot.class);
+        if (fastPotModule != null && fastPotModule.isEnabled() && mc.player.getMainHandStack().getItem() instanceof SplashPotionItem) {
+            System.out.println("[NoDelay] FastPot is active for splash potion, returning.");
+            return; // Let FastPot handle the cooldown
+        }
 
         if (noHitDelay.getValue()) {
+            System.out.println("[NoDelay] Setting item use cooldown");
             // Introduce a small random delay to make it less detectable
             // This will set the cooldown to a random value between 0 and 2 ticks
             ((MinecraftClientAccessor) mc).setItemUseCooldown(random.nextInt(3));

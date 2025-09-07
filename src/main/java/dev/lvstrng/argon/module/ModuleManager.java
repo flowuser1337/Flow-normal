@@ -6,9 +6,9 @@ import dev.lvstrng.argon.module.modules.client.ClickGUI;
 import dev.lvstrng.argon.module.modules.client.Friends;
 import dev.lvstrng.argon.module.modules.client.SelfDestruct;
 import dev.lvstrng.argon.module.modules.client.TriggerBot;
-import dev.lvstrng.argon.module.modules.client.FastPot;
 import dev.lvstrng.argon.module.modules.client.Sprint;
 import dev.lvstrng.argon.module.modules.client.NoDelay;
+import dev.lvstrng.argon.module.modules.client.FastPot;
 import dev.lvstrng.argon.module.modules.client.AimAssist;
 
 import dev.lvstrng.argon.module.setting.KeybindSetting;
@@ -31,9 +31,9 @@ public final class ModuleManager implements ButtonListener {
 	public void addModules() {
 		//Client
 		add(new TriggerBot());
-		add(new FastPot());
 		add(new Sprint());
 		add(new NoDelay());
+		add(new FastPot());
 		add(new Friends());
 		add(new ClickGUI());
 		add(new SelfDestruct());
@@ -55,7 +55,7 @@ public final class ModuleManager implements ButtonListener {
 		Argon.INSTANCE.getEventManager().add(ButtonListener.class, this);
 
 		for (Module module : modules)
-			module.addSetting(new KeybindSetting(EncryptedString.of("Keybind"), module.getKey(), true).setDescription(EncryptedString.of("Key to enabled the module")));
+			                        module.addSetting(new KeybindSetting(EncryptedString.of("Keybind").toString(), module.getKey(), true, module).setDescription(EncryptedString.of("Key to enabled the module")));
 	}
 
 	public List<Module> getModulesInCategory(Category category) {
@@ -82,7 +82,7 @@ public final class ModuleManager implements ButtonListener {
 			return;
 		}
 		modules.forEach(module -> {
-			if(module.getKey() == event.button && event.action == GLFW.GLFW_PRESS) {
+			if((module.getKey() == event.button || module.getKey() == event.scancode) && event.action == GLFW.GLFW_PRESS) {
 				module.toggle();
 				Argon.INSTANCE.getProfileManager().saveProfile();
 			}

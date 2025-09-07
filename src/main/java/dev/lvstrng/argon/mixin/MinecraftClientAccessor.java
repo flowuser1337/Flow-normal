@@ -19,4 +19,7 @@ public interface MinecraftClientAccessor {
 
 	@Accessor("itemUseCooldown")
 	void setItemUseCooldown(int cooldown);
+
+	@Accessor("itemUseCooldown") // ADDED
+	int getItemUseCooldown(); // ADDED
 }

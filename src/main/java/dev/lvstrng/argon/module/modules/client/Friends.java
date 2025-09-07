@@ -22,7 +22,7 @@ import org.lwjgl.glfw.GLFW;
 import java.awt.*;
 
 public final class Friends extends Module implements ButtonListener, AttackListener {
-    private final KeybindSetting addFriendKey = new KeybindSetting(EncryptedString.of("Friend Key"), GLFW.GLFW_MOUSE_BUTTON_MIDDLE, false);
+    private final KeybindSetting addFriendKey = new KeybindSetting(EncryptedString.of("Friend Key").toString(), GLFW.GLFW_MOUSE_BUTTON_MIDDLE, false, this);
     public final BooleanSetting antiAttack = new BooleanSetting(EncryptedString.of("Anti-Attack"), false);
     public final BooleanSetting disableAimAssist = new BooleanSetting(EncryptedString.of("Anti-Aim"), false);
     public final BooleanSetting friendStatus = new BooleanSetting(EncryptedString.of("Friend Status"), false);

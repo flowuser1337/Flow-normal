@@ -25,8 +25,7 @@ public final class KeybindBox extends RenderableSetting {
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         super.render(context, mouseX, mouseY, delta);
 
-        // New colors from the design
-        Color textColor = new Color(255, 255, 255); // #FFFFFF
+        Color textColor = new Color(255, 255, 255);
 
         String displayText;
         if (!keybind.isListening()) {
@@ -37,7 +36,6 @@ public final class KeybindBox extends RenderableSetting {
 
         TextRenderer.drawStringBold(displayText, context, parentX() + 5, (parentY() + parentOffset() + offset) + 9, textColor.getRGB());
 
-        // Keep hover effect consistent
         if (!parent.parent.dragging) {
             int toHoverAlpha = isHovered(mouseX, mouseY) ? 30 : 0;
 
@@ -62,7 +60,11 @@ public final class KeybindBox extends RenderableSetting {
     @Override
     public void keyPressed(int keyCode, int scanCode, int modifiers) {
         if(keybind.isListening()) {
-            keybind.setKey(keyCode);
+            if (keyCode == GLFW.GLFW_KEY_ESCAPE || keyCode == GLFW.GLFW_KEY_DELETE || keyCode == GLFW.GLFW_KEY_BACKSPACE) {
+                keybind.setKey(GLFW.GLFW_KEY_UNKNOWN);
+            } else {
+                keybind.setKey(keyCode);
+            }
             keybind.setListening(false);
         }
     }

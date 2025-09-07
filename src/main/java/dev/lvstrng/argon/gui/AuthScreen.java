@@ -25,7 +25,7 @@ public class AuthScreen extends Screen {
 
     @Override
     protected void init() {
-        System.out.println("AuthScreen init() called!");
+        
         int centerX = this.width / 2;
         int centerY = this.height / 2;
 

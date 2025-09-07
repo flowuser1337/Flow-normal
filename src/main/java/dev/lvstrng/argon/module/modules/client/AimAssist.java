@@ -9,6 +9,7 @@ import dev.lvstrng.argon.module.setting.MinMaxSetting;
 import dev.lvstrng.argon.module.setting.NumberSetting;
 import dev.lvstrng.argon.utils.*;
 import dev.lvstrng.argon.utils.rotation.Rotation;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.AxeItem;
 import net.minecraft.item.SwordItem;
@@ -44,6 +45,10 @@ public final class AimAssist extends Module implements HudListener, MouseMoveLis
     private final TimerUtils mouseMoveTimer = new TimerUtils();
     private boolean hasUserMovedMouse;
 
+    // --- VARIABLES MEJORADAS PARA STICKY AIM ---
+    private PlayerEntity lockedTarget = null;
+    private final TimerUtils stickyTimer = new TimerUtils();
+
     private PlayerEntity currentTarget = null;
     private Vec3d smoothedTargetPos = null;
     private Vec3d targetVelocity = Vec3d.ZERO; // Almacena la velocidad del objetivo
@@ -65,16 +70,30 @@ public final class AimAssist extends Module implements HudListener, MouseMoveLis
 
         addSettings(stickyAim, onlyWeapon, onLeftClick, radius, seeOnly, fov, speed, smoothing, prediction, yawAssist, pitchAssist);
     }
+    
+    /*
+     * IMPORTANTE: Debes conectar este método a tu sistema de eventos.
+     * Este método debe ser llamado cada vez que el jugador ataque a una entidad.
+     */
+    public void onAttack(Entity target) {
+        if (stickyAim.getValue() && target instanceof PlayerEntity) {
+            // Al atacar a un jugador, lo fijamos como objetivo y reiniciamos el timer.
+            lockedTarget = (PlayerEntity) target;
+            stickyTimer.reset();
+        }
+    }
 
     @Override
     public void onEnable() {
         hasUserMovedMouse = false;
         mouseMoveTimer.reset();
         currentTarget = null;
+        lockedTarget = null;
         smoothedTargetPos = null;
         targetVelocity = Vec3d.ZERO;
         eventManager.add(HudListener.class, this);
         eventManager.add(MouseMoveListener.class, this);
+        // Aquí deberías registrar tu listener de eventos de ataque si es necesario
         super.onEnable();
     }
 
@@ -82,6 +101,7 @@ public final class AimAssist extends Module implements HudListener, MouseMoveLis
     public void onDisable() {
         eventManager.remove(HudListener.class, this);
         eventManager.remove(MouseMoveListener.class, this);
+        // Aquí deberías desregistrar tu listener de eventos de ataque
         super.onDisable();
     }
 
@@ -106,10 +126,21 @@ public final class AimAssist extends Module implements HudListener, MouseMoveLis
             return;
         }
 
-        PlayerEntity target = WorldUtils.findNearestPlayer(mc.player, radius.getValueFloat(), seeOnly.getValue(), false);
-        if (stickyAim.getValue() && mc.player.getAttacking() instanceof PlayerEntity player && player.distanceTo(mc.player) < radius.getValue()) {
-            target = player;
+        // --- LÓGICA DE TARGETING MEJORADA PARA STICKY AIM ---
+        PlayerEntity target = null;
+        final int STICKY_DURATION_MS = 2500; // Duración fija como solicitaste
+
+        // 1. Comprueba si hay un objetivo fijado y si todavía es válido.
+        if (stickyAim.getValue() && lockedTarget != null && !stickyTimer.delay(STICKY_DURATION_MS) && lockedTarget.isAlive() && mc.player.distanceTo(lockedTarget) < radius.getValue()) {
+            // Si es válido, ese es nuestro objetivo.
+            target = lockedTarget;
+        } else {
+            // 2. Si no, busca al jugador más cercano como antes.
+            lockedTarget = null; // Limpia el objetivo fijado.
+            target = WorldUtils.findNearestPlayer(mc.player, radius.getValueFloat(), seeOnly.getValue(), false);
         }
+        // --- FIN DE LA LÓGICA DE TARGETING ---
+
 
         if (target == null || !(target instanceof PlayerEntity)) { // Explicitly check if the target is a player
             currentTarget = null;

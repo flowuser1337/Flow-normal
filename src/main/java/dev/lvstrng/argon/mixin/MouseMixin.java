@@ -36,6 +36,6 @@ public class MouseMixin {
 
 	@Inject(method = "onMouseButton", at = @At("HEAD"))
 	private void onMousePress(long window, int button, int action, int mods, CallbackInfo ci) {
-		EventManager.fire(new ButtonListener.ButtonEvent(button, window, action));
+		EventManager.fire(new ButtonListener.ButtonEvent(button, window, action, 0));
 	}
 }

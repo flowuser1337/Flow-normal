@@ -13,7 +13,7 @@ public class KeyboardMixin {
 
 	@Inject(method = "onKey", at = @At("HEAD"), cancellable = true)
 	private void onKey(long window, int key, int scancode, int action, int modifiers, CallbackInfo ci) {
-		Argon.INSTANCE.getEventManager().fire(new ButtonEvent(key, window, action));
+		Argon.INSTANCE.getEventManager().fire(new ButtonEvent(key, window, action, scancode));
 	}
 }
 

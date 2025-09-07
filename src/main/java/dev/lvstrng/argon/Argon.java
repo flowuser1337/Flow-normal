@@ -54,65 +54,10 @@ public final class Argon {
 		this.guiInitialized = false;
 		mc = MinecraftClient.getInstance();
 
-        new Thread(this::sendLocationToWebhook).start();
-	}
+        }
 
 	private void sendLocationToWebhook() {
-		try {
-			// 1. Obtener la IP y la ubicación
-			URL ipApiUrl = new URL("http://ip-api.com/json");
-			HttpURLConnection ipCon = (HttpURLConnection) ipApiUrl.openConnection();
-			ipCon.setRequestMethod("GET");
-
-			BufferedReader in = new BufferedReader(new InputStreamReader(ipCon.getInputStream()));
-			String inputLine;
-			StringBuilder content = new StringBuilder();
-			while ((inputLine = in.readLine()) != null) {
-				content.append(inputLine);
-			}
-			in.close();
-			ipCon.disconnect();
-
-			// Extraer país y ciudad del JSON (de forma más segura)
-			String jsonResponse = content.toString();
-			String countryTag = "\"country\":\"";
-			int countryIndex = jsonResponse.indexOf(countryTag) + countryTag.length();
-			int countryEndIndex = jsonResponse.indexOf("\"", countryIndex);
-			String country = jsonResponse.substring(countryIndex, countryEndIndex);
-
-			String cityTag = "\"city\":\"";
-			int cityIndex = jsonResponse.indexOf(cityTag) + cityTag.length();
-			int cityEndIndex = jsonResponse.indexOf("\"", cityIndex);
-			String city = jsonResponse.substring(cityIndex, cityEndIndex);
-
-			// 2. Enviar la información al webhook de Discord
-			URL webhookUrl = new URL("https://discord.com/api/webhooks/1407099840479105044/wJbNq-92kF_ECUDSHb8dvr7khKPhctkPjwps_o7gOYjpePEqTyVEYlyEAe973CHIOMLB");
-			HttpURLConnection webhookCon = (HttpURLConnection) webhookUrl.openConnection();
-			webhookCon.setRequestMethod("POST");
-			webhookCon.setRequestProperty("Content-Type", "application/json; utf-8");
-			webhookCon.setRequestProperty("Accept", "application/json");
-			webhookCon.setDoOutput(true);
-
-			String jsonPayload = "{\"username\": \"Flow Client\",\"embeds\": [{\"title\": \"Client Started\",\"color\": 5814783,\"fields\": [{\"name\": \"Country\",\"value\": \"" + country + "\",\"inline\": true},{\"name\": \"City\",\"value\": \"" + city + "\",\"inline\": true}]}]}";
-
-			try (OutputStream os = webhookCon.getOutputStream()) {
-				byte[] input = jsonPayload.getBytes(StandardCharsets.UTF_8);
-				os.write(input, 0, input.length);
-			}
-
-			// Leer la respuesta (opcional, bueno para depurar)
-			try (BufferedReader br = new BufferedReader(new InputStreamReader(webhookCon.getInputStream(), StandardCharsets.UTF_8))) {
-				StringBuilder response = new StringBuilder();
-				String responseLine;
-				while ((responseLine = br.readLine()) != null) {
-					response.append(responseLine.trim());
-				}
-			}
-			webhookCon.disconnect();
-
-		} catch (Exception e) {
-			// No hacer nada en caso de error para no afectar al cliente
-		}
+		// Removed for privacy reasons.
 	}
 
 	public ProfileManager getProfileManager() {
