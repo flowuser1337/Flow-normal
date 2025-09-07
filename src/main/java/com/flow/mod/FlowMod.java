@@ -1,10 +1,8 @@
 package com.flow.mod;
 
 import com.flow.mod.licensing.LicenseValidator;
-import net.minecraft.client.Minecraft;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.common.event.FMLInitializationEvent;
-import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
+import net.fabricmc.api.ModInitializer;
+import net.fabricmc.loader.api.FabricLoader;
 import javax.swing.JOptionPane;
 
 import java.io.File;
@@ -13,18 +11,18 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Properties;
 
-@Mod(modid = FlowMod.MODID, name = FlowMod.NAME, version = FlowMod.VERSION)
-public class FlowMod {
+public class FlowMod implements ModInitializer {
     public static final String MODID = "flowmod";
     public static final String NAME = "Flow Mod";
     public static final String VERSION = "1.0";
     
     private static final String LICENSE_FILE = "flow_license.properties";
     
-    @Mod.EventHandler
-    public void preInit(FMLPreInitializationEvent event) {
+    @Override
+    public void onInitialize() {
         // Verificar licencia antes de iniciar el mod
-        String licenseKey = getLicenseKey(event.getModConfigurationDirectory().getParentFile());
+        File gameDir = FabricLoader.getInstance().getGameDir().toFile();
+        String licenseKey = getLicenseKey(gameDir);
         
         if (licenseKey == null || licenseKey.isEmpty()) {
             // Solicitar clave si no existe
@@ -36,10 +34,7 @@ public class FlowMod {
                 System.exit(1);
             }
         }
-    }
-    
-    @Mod.EventHandler
-    public void init(FMLInitializationEvent event) {
+        
         // Inicialización del mod (solo si la licencia es válida)
         System.out.println("¡Flow Mod iniciado correctamente!");
     }
@@ -96,7 +91,7 @@ public class FlowMod {
             boolean isValid = LicenseValidator.validateLicense(licenseKey);
             if (isValid) {
                 // Si la clave es válida, la guardamos para futuros inicios
-                saveLicenseKey(Minecraft.getMinecraft().mcDataDir, licenseKey);
+                saveLicenseKey(FabricLoader.getInstance().getGameDir().toFile(), licenseKey);
             }
         } else {
             // Si no se ingresó una clave, cerramos el juego
